@@ -1,9 +1,9 @@
 import os
 import sys
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
-from deepseek import DeepSeek
 
 # Load environment variables
 load_dotenv()
@@ -13,9 +13,6 @@ api_key = os.getenv("DEEPSEEK_API_KEY")
 
 if not api_key:
     raise ValueError("❌ ERROR: DEEPSEEK_API_KEY is not set! Check your environment variables.")
-
-# Initialize DeepSeek client
-client = DeepSeek(api_key=api_key)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -103,17 +100,31 @@ def get_deepseek_response(user_prompt):
 
         Remember: Your goal is to guide students to discover answers themselves through questions. Always maintain a questioning approach that helps students think through the problem themselves."""
         
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": "deepseek-chat",
+            "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            max_tokens=1000,
-            temperature=0.7
+            "max_tokens": 1000,
+            "temperature": 0.7
+        }
+        
+        response = requests.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers=headers,
+            json=data
         )
+        
+        response.raise_for_status()
+        result = response.json()
         print("✅ Received response from DeepSeek")
-        return response.choices[0].message.content
+        return result["choices"][0]["message"]["content"]
     except Exception as e:
         print(f"❌ Error while calling DeepSeek: {str(e)}")
         return f"Error: {str(e)}"
