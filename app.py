@@ -14,6 +14,8 @@ api_key = os.getenv("DEEPSEEK_API_KEY")
 if not api_key:
     raise ValueError("❌ ERROR: DEEPSEEK_API_KEY is not set! Check your environment variables.")
 
+print(f"🔑 API Key loaded: {api_key[:5]}...{api_key[-5:] if api_key else 'None'}")
+
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
@@ -115,16 +117,28 @@ def get_deepseek_response(user_prompt):
             "temperature": 0.7
         }
         
+        # Print request details for debugging
+        print(f"🌐 Making request to: https://api.deepseek.ai/v1/chat/completions")
+        print(f"🔑 Using API key: {api_key[:5]}...{api_key[-5:]}")
+        
         response = requests.post(
-            "https://api.deepseek.com/v1/chat/completions",
+            "https://api.deepseek.ai/v1/chat/completions",
             headers=headers,
             json=data
         )
+        
+        # Print response details for debugging
+        print(f"📡 Response status code: {response.status_code}")
+        print(f"📡 Response headers: {response.headers}")
         
         response.raise_for_status()
         result = response.json()
         print("✅ Received response from DeepSeek")
         return result["choices"][0]["message"]["content"]
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ HTTP Error while calling DeepSeek: {str(e)}")
+        print(f"❌ Response content: {e.response.text if hasattr(e, 'response') else 'No response content'}")
+        return f"Error: {str(e)}"
     except Exception as e:
         print(f"❌ Error while calling DeepSeek: {str(e)}")
         return f"Error: {str(e)}"
