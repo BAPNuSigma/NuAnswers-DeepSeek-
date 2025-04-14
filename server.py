@@ -1,5 +1,5 @@
 import os
-import requests
+from openai import OpenAI
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
@@ -14,6 +14,12 @@ if not api_key:
 
 print(f"🔑 API Key loaded: {api_key[:5]}...{api_key[-5:] if api_key else 'None'}")
 
+# Initialize OpenAI client with DeepSeek base URL
+client = OpenAI(
+    api_key=api_key,
+    base_url="https://api.deepseek.com"
+)
+
 # Initialize Flask app
 app = Flask(__name__)
 
@@ -23,40 +29,16 @@ def get_deepseek_response(user_prompt):
         print("⚡ Sending request to DeepSeek...")
         print(f"📨 Prompt: {user_prompt}")
         
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        data = {
-            "model": "deepseek-chat",
-            "messages": [{"role": "user", "content": user_prompt}],
-            "max_tokens": 1000,
-            "temperature": 0.7
-        }
-        
-        # Print request details for debugging
-        print(f"🌐 Making request to: https://api.deepseek.ai/v1/chat/completions")
-        print(f"🔑 Using API key: {api_key[:5]}...{api_key[-5:]}")
-        
-        response = requests.post(
-            "https://api.deepseek.ai/v1/chat/completions",
-            headers=headers,
-            json=data
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": user_prompt}],
+            max_tokens=1000,
+            temperature=0.7,
+            stream=False
         )
         
-        # Print response details for debugging
-        print(f"📡 Response status code: {response.status_code}")
-        print(f"📡 Response headers: {response.headers}")
-        
-        response.raise_for_status()
-        result = response.json()
         print("✅ Received response from DeepSeek")
-        return result["choices"][0]["message"]["content"]
-    except requests.exceptions.HTTPError as e:
-        print(f"❌ HTTP Error while calling DeepSeek: {str(e)}")
-        print(f"❌ Response content: {e.response.text if hasattr(e, 'response') else 'No response content'}")
-        return f"Error: {str(e)}"
+        return response.choices[0].message.content
     except Exception as e:
         print(f"❌ Error while calling DeepSeek: {str(e)}")
         return f"Error: {str(e)}"
