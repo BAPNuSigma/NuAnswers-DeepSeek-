@@ -15,7 +15,7 @@ if st.session_state.conversation_state == 'initial':
     if st.button("Ask Question"):
         if user_input:
             try:
-                response = requests.post("https://nuanswers.onrender.com/chat", 
+                response = requests.post("https://nuanswers-deepseek.onrender.com/chat", 
                                       json={"message": user_input},
                                       headers={"Content-Type": "application/json"})
                 
